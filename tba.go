@@ -2,6 +2,8 @@ package tba
 
 import (
 	"sync/atomic"
+	"sync"
+	"runtime"
 	"time"
 )
 
@@ -16,6 +18,7 @@ type Bucket struct {
 	tokenAdd   int64
 	period     time.Duration
 	done       chan int
+	mu         sync.RWMutex
 }
 
 // Create a bucket that limits QPS (queries per second)
@@ -40,7 +43,7 @@ func NewBucket(bucketSize, tokenAdd int64, period time.Duration) *Bucket {
 	return b
 }
 
-// Stop working, shutdown
+// Stop working, shutdown. Concurrent calls to this object can hang/crash
 func (b *Bucket) Stop() {
 	close(b.done)
 }
@@ -65,6 +68,18 @@ func (b *Bucket) AskN(v int64) bool {
 	return true
 }
 
+// Wait&acquire 'v' tokens
+func (b *Bucket) Wait(v int64) {
+	for {
+		if b.AskN(v) {
+			return
+		}
+		// Lock-unlock to ensure token add event was happen
+		b.mu.Lock()
+		b.mu.Unlock()
+	}
+}
+
 /// Internal-use ///
 
 func newQueryPerDuration(limit int64, dur time.Duration) *Bucket {
@@ -83,8 +98,10 @@ func (b *Bucket) start() {
 	defer t.Stop()
 
 	for {
+		b.mu.RLock() //Get the read lock, so Wait() cant get write lock until we add the tokens
 		select {
 		case <-b.done:
+			b.mu.RUnlock()
 			return
 		case <-t.C:
 			newVal := atomic.AddInt64(&b.currCnt, b.tokenAdd)
@@ -92,6 +109,8 @@ func (b *Bucket) start() {
 				// Withdraw excess
 				atomic.AddInt64(&b.currCnt, b.bucketSize-newVal)
 			}
+			b.mu.RUnlock()
+			runtime.Gosched()
 		} //select
 	} //for
 }
