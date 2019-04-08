@@ -49,6 +49,16 @@ func TestAsk(t *testing.T) {
 	ask_test_helper(t)
 }
 
+func TestMaxBurst(t *testing.T) {
+	n := int64(100)
+	b1 := NewQPSLimit(n)
+	defer b1.Stop()
+	b1.MaxBurst(n)
+	for i:=int64(0); i<n; i++ {
+		b1.Ask()
+	}
+}
+
 func ask_test_helper(t *testing.T) {
 	b1 := NewBucket(2, 1, time.Millisecond)
 	defer b1.Stop()

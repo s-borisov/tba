@@ -80,6 +80,20 @@ func (b *Bucket) Wait(v int64) {
 	}
 }
 
+func (b *Bucket)MaxBurst(sz int64) {
+	atomic.StoreInt64(&b.bucketSize, sz);
+	b.Fill()
+}
+
+func (b *Bucket)Fill() {
+	atomic.StoreInt64(&b.currCnt, b.bucketSize)
+}
+
+func (b *Bucket)Drain() {
+	atomic.StoreInt64(&b.currCnt, 0)
+}
+
+
 /// Internal-use ///
 
 func newQueryPerDuration(limit int64, dur time.Duration) *Bucket {
