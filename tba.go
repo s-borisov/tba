@@ -80,19 +80,22 @@ func (b *Bucket) Wait(v int64) {
 	}
 }
 
-func (b *Bucket)MaxBurst(sz int64) {
+func (b *Bucket) MaxBurst(sz int64) {
 	atomic.StoreInt64(&b.bucketSize, sz);
 	b.Fill()
 }
 
-func (b *Bucket)Fill() {
+func (b *Bucket) Fill() {
 	atomic.StoreInt64(&b.currCnt, b.bucketSize)
 }
 
-func (b *Bucket)Drain() {
+func (b *Bucket) Drain() {
 	atomic.StoreInt64(&b.currCnt, 0)
 }
 
+func (b *Bucket) GetCurrentCounter() int64 {
+	return atomic.LoadInt64(&b.currCnt)
+}
 
 /// Internal-use ///
 

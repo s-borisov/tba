@@ -41,12 +41,6 @@ func TestAsk(t *testing.T) {
 	t.Logf("With GOMAXPROCS=1")
 	runtime.GOMAXPROCS(1)
 	ask_test_helper(t)
-	t.Logf("With GOMAXPROCS=2")
-	runtime.GOMAXPROCS(2)
-	ask_test_helper(t)
-	t.Logf("With GOMAXPROCS=5")
-	runtime.GOMAXPROCS(5)
-	ask_test_helper(t)
 }
 
 func TestMaxBurst(t *testing.T) {
